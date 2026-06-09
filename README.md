@@ -1,20 +1,56 @@
-﻿# VPS 娴侀噺鐩戞帶
+# VPS 流量监控
 
-閫氳繃 `http://VPS_IP:9090` 璁块棶鐨勭綉椤电増娴侀噺鐩戞帶闈㈡澘銆?
-## 榛樿閰嶇疆
+一个轻量级 VPS 网页流量监控面板，通过 `http://VPS_IP:9090` 访问。
 
-- 璐﹀彿锛歚admin`
-- 瀵嗙爜锛歚QQqq308008685`
-- 绔彛锛歚9090`
-- 鏁版嵁搴擄細`traffic.db`
+## 默认配置
 
-## 鍔熻兘
+- 账号：`admin`
+- 密码：`QQqq308008685`
+- 端口：`9090`
+- 数据库：`traffic.db`
 
-- 瀹炴椂鏄剧ず褰撳墠涓婁紶銆佷笅杞介€熷害
-- 瀹炴椂鏄剧ず褰撴湀绱涓婁紶銆佷笅杞芥祦閲?- 鏀寔閫夋嫨鎸囧畾鏈堜唤鏌ョ湅绱涓婁紶銆佷笅杞芥暟鎹?- 鏀寔閫夋嫨鍏ㄩ儴缃戝崱鎴栨煇涓綉鍗?- 浣跨敤 SQLite 鎸佷箙鍖栨湀浠界疮璁℃暟鎹?
-## 閮ㄧ讲
+## 功能
 
-鎶婃暣涓洰褰曚笂浼犲埌 VPS 鍚庢墽琛岋細
+- 实时显示上传速度和下载速度
+- 实时显示当月上传、下载累计流量
+- 支持选择指定月份查看累计上传、下载数据
+- 支持查看全部网卡或单个网卡
+- 使用 SQLite 持久化流量累计数据
+- 支持 systemd 后台运行和开机自启
+
+## 一键部署
+
+在 VPS 上执行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shenping1200/vps-traffic-monitor/main/install-remote.sh | sudo bash
+```
+
+如果服务器没有 `curl`，可以使用：
+
+```bash
+wget -qO- https://raw.githubusercontent.com/shenping1200/vps-traffic-monitor/main/install-remote.sh | sudo bash
+```
+
+部署完成后访问：
+
+```text
+http://你的服务器IP:9090
+```
+
+## 防火墙放行
+
+如果 VPS 开启了防火墙，需要放行 `9090` 端口：
+
+```bash
+sudo ufw allow 9090/tcp
+```
+
+如果使用云厂商安全组，也需要在安全组中放行 TCP `9090`。
+
+## 手动部署
+
+把项目上传到 VPS 后执行：
 
 ```bash
 cd vps-traffic-monitor
@@ -22,18 +58,7 @@ chmod +x install.sh
 sudo ./install.sh
 ```
 
-濡傛灉 VPS 寮€浜嗛槻鐏锛岄渶瑕佹斁琛岀鍙ｏ細
-
-```bash
-sudo ufw allow 9090/tcp
-```
-
-鐒跺悗璁块棶锛?
-```text
-http://浣犵殑鏈嶅姟鍣↖P:9090
-```
-
-## 鎵嬪姩杩愯
+## 手动运行
 
 ```bash
 python3 -m venv .venv
@@ -42,3 +67,22 @@ pip install -r requirements.txt
 python server.py
 ```
 
+## 常用命令
+
+查看服务状态：
+
+```bash
+sudo systemctl status vps-traffic-monitor
+```
+
+重启服务：
+
+```bash
+sudo systemctl restart vps-traffic-monitor
+```
+
+查看日志：
+
+```bash
+sudo journalctl -u vps-traffic-monitor -f
+```
