@@ -19,7 +19,7 @@ After=network.target
 [Service]
 WorkingDirectory=$APP_DIR
 Environment=MONITOR_USERNAME=admin
-Environment=MONITOR_PASSWORD=QQqq308008685
+Environment=MONITOR_PASSWORD=admin
 Environment=MONITOR_PORT=9090
 ExecStart=$APP_DIR/.venv/bin/python $APP_DIR/server.py
 Restart=always
@@ -31,4 +31,4 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now vps-traffic-monitor
-echo "VPS Traffic Monitor 已启动： http://你的服务器IP:9090"
+echo "VPS Traffic Monitor ???? http://?????IP:9090"
