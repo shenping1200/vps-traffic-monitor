@@ -42,11 +42,11 @@ class SettingsPayload(BaseModel):
     dailyUnit: str = "GB"
     monthlyLimit: str = "2"
     monthlyUnit: str = "TB"
-    alertMode: str = "?? 90% ????100% ???"
-    muteWindow: str = "???? 6 ???????"
+    alertMode: str = "达到 90% 先提醒，100% 再报警"
+    muteWindow: str = "同一类型 6 小时只提醒一次"
     tgToken: str = ""
     tgChatId: str = ""
-    tgEnabled: str = "???"
+    tgEnabled: str = "已启用"
 
 
 def month_key(timestamp: Optional[float] = None) -> str:
@@ -138,11 +138,11 @@ def init_db() -> None:
             "dailyUnit": "GB",
             "monthlyLimit": "2",
             "monthlyUnit": "TB",
-            "alertMode": "?? 90% ????100% ???",
-            "muteWindow": "???? 6 ???????",
+            "alertMode": "达到 90% 先提醒，100% 再报警",
+            "muteWindow": "同一类型 6 小时只提醒一次",
             "tgToken": "",
             "tgChatId": "",
-            "tgEnabled": "???",
+            "tgEnabled": "已启用",
         }
         for key, value in defaults.items():
             connection.execute(
@@ -235,7 +235,7 @@ def usage_for_day(selected_day: str) -> dict:
 
 def send_telegram_message(token: str, chat_id: str, text: str) -> dict:
     if not token or not chat_id:
-        raise RuntimeError("Telegram Token ? Chat ID ???")
+        raise RuntimeError("Telegram Token 或 Chat ID 未配置")
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = urllib.parse.urlencode({
         "chat_id": chat_id,
@@ -250,15 +250,15 @@ def send_telegram_message(token: str, chat_id: str, text: str) -> dict:
 
 
 def mute_seconds(label: str) -> int:
-    if "1 ??" in label:
+    if "1 小时" in label:
         return 3600
-    if "??" in label:
+    if "每天" in label:
         return 86400
     return 21600
 
 
 def should_send_alert(alert_key: str, settings: dict) -> bool:
-    window = mute_seconds(settings.get("muteWindow", "???? 6 ???????"))
+    window = mute_seconds(settings.get("muteWindow", "同一类型 6 小时只提醒一次"))
     now = time.time()
     with sqlite3.connect(DB_PATH) as connection:
         row = connection.execute("SELECT last_sent_at FROM alert_state WHERE alert_key = ?", (alert_key,)).fetchone()
@@ -295,7 +295,7 @@ def build_alert_message(alert_type: str, used_bytes: int, limit_bytes: int, rati
 
 
 def alert_thresholds(settings: dict) -> list[int]:
-    mode = settings.get("alertMode", "?? 90% ????100% ???")
+    mode = settings.get("alertMode", "达到 90% 先提醒，100% 再报警")
     if "80% / 90% / 100%" in mode:
         return [80, 90, 100]
     if "100%" in mode and "90%" not in mode:
@@ -305,7 +305,7 @@ def alert_thresholds(settings: dict) -> list[int]:
 
 def evaluate_alerts(day_usage: dict, month_usage: dict) -> None:
     settings = get_settings()
-    if settings.get("tgEnabled") != "???":
+    if settings.get("tgEnabled") != "已启用":
         return
     token = settings.get("tgToken", "")
     chat_id = settings.get("tgChatId", "")
@@ -416,7 +416,7 @@ def index() -> FileResponse:
 @app.post("/api/login")
 def login(payload: LoginPayload, response: Response) -> dict:
     if not verify_login(payload.username, payload.password):
-        raise HTTPException(status_code=401, detail="???????")
+        raise HTTPException(status_code=401, detail="账号或密码错误")
     response.set_cookie(COOKIE_NAME, SESSION_TOKEN, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 30)
     return {"ok": True, "username": get_settings().get("username", USERNAME)}
 

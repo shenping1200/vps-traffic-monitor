@@ -46,7 +46,7 @@ systemctl daemon-reload
 systemctl enable --now vps-traffic-monitor
 
 echo ""
-echo "????"
-echo "????: http://?????IP:9090"
-echo "??: admin"
-echo "??: admin"
+echo "部署完成"
+echo "访问链接: http://你的服务器IP:9090"
+echo "账号: admin"
+echo "密码: admin"
