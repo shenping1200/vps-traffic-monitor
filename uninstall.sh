@@ -14,4 +14,4 @@ rm -f "$SERVICE_FILE"
 systemctl daemon-reload
 rm -rf "$APP_DIR"
 
-echo "vps-traffic-monitor has been uninstalled."
+echo "已卸载完成"
