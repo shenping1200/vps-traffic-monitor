@@ -40,11 +40,11 @@ class SettingsPayload(BaseModel):
     dailyUnit: str = "GB"
     monthlyLimit: str = "2"
     monthlyUnit: str = "TB"
-    alertMode: str = "?? 90% ????100% ???"
-    muteWindow: str = "???? 6 ???????"
+    alertMode: str = "达到 90% 先提醒，100% 再报警"
+    muteWindow: str = "同一类型 6 小时只提醒一次"
     tgToken: str = ""
     tgChatId: str = ""
-    tgEnabled: str = "???"
+    tgEnabled: str = "已启用"
 
 def month_key(timestamp: Optional[float] = None) -> str:
     return datetime.fromtimestamp(timestamp or time.time()).strftime("%Y-%m")
@@ -92,11 +92,11 @@ def init_db() -> None:
             "dailyUnit": "GB",
             "monthlyLimit": "2",
             "monthlyUnit": "TB",
-            "alertMode": "?? 90% ????100% ???",
-            "muteWindow": "???? 6 ???????",
+            "alertMode": "达到 90% 先提醒，100% 再报警",
+            "muteWindow": "同一类型 6 小时只提醒一次",
             "tgToken": "",
             "tgChatId": "",
-            "tgEnabled": "???",
+            "tgEnabled": "已启用",
         }
         for key, value in defaults.items():
             connection.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)", (key, value))
@@ -173,7 +173,7 @@ def usage_for_day(selected_day: str) -> dict:
     return {"day": selected_day, "totalRx": sum(item["rx"] for item in interfaces), "totalTx": sum(item["tx"] for item in interfaces), "interfaces": interfaces}
 
 def send_telegram_message(token: str, chat_id: str, text: str) -> dict:
-    if not token or not chat_id: raise RuntimeError("Telegram Token ? Chat ID ???")
+    if not token or not chat_id: raise RuntimeError("Telegram Token 和 Chat ID 缺失")
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": "true"}).encode("utf-8")
     request = urllib.request.Request(url, data=payload, method="POST")
@@ -182,12 +182,12 @@ def send_telegram_message(token: str, chat_id: str, text: str) -> dict:
     return {"ok": True, "response": body}
 
 def mute_seconds(label: str) -> int:
-    if "1 ??" in label: return 3600
-    if "??" in label: return 86400
+    if "1 小时" in label: return 3600
+    if "天" in label: return 86400
     return 21600
 
 def should_send_alert(alert_key: str, settings: dict) -> bool:
-    window = mute_seconds(settings.get("muteWindow", "???? 6 ???????"))
+    window = mute_seconds(settings.get("muteWindow", "同一类型 6 小时只提醒一次"))
     now = time.time()
     with sqlite3.connect(DB_PATH) as connection:
         row = connection.execute("SELECT last_sent_at FROM alert_state WHERE alert_key = ?", (alert_key,)).fetchone()
@@ -201,32 +201,32 @@ def build_alert_message(alert_type: str, used_bytes: int, limit_bytes: int, rati
     alias_text = f"?{html.escape(alias)}?" if alias else ""
     try: ip_text = html.escape(socket.gethostbyname(socket.gethostname()))
     except Exception: ip_text = "0.0.0.0"
-    alert_title = "???????" if alert_type.startswith("daily") else "???????"
+    alert_title = "日流量额度预警" if alert_type.startswith("daily") else "月流量额度预警"
     return (
-        f"?? <b>VPS ????</b>\\n\\n"
-        f"????<b>{hostname}{alias_text}</b>\\n"
+        f"?🚨 <b>VPS 流量报警</b>\\n\\n"
+        f"服务器：<b>{hostname}{alias_text}</b>\\n"
         f"IP?<code>{ip_text}</code>\\n"
-        f"?????{alert_title}\\n\\n"
-        f"?????<b>{format_bytes(used_bytes)}</b>\\n"
-        f"?????<b>{format_bytes(limit_bytes)}</b>\\n"
-        f"?????<b>{ratio:.1f}%</b>\\n"
-        f"?????{format_bytes(day_usage['totalRx'])}\\n"
-        f"?????{format_bytes(day_usage['totalTx'])}\\n"
-        f"?????{format_bytes(month_usage['totalRx'])}\\n"
-        f"?????{format_bytes(month_usage['totalTx'])}\\n\\n"
-        f"?????{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\\n"
-        f"???????????????????????"
+        f"报警类型：{alert_title}\\n\\n"
+        f"当前用量：<b>{format_bytes(used_bytes)}</b>\\n"
+        f"设置额度：<b>{format_bytes(limit_bytes)}</b>\\n"
+        f"使用比例：<b>{ratio:.1f}%</b>\\n"
+        f"下载累计：{format_bytes(day_usage['totalRx'])}\\n"
+        f"下载累计：{format_bytes(day_usage['totalTx'])}\\n"
+        f"下载累计：{format_bytes(month_usage['totalRx'])}\\n"
+        f"下载累计：{format_bytes(month_usage['totalTx'])}\\n\\n"
+        f"触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\\n"
+        f"说明：流量已达到预警阈值，请及时检查业务流量。"
     )
 
 def alert_thresholds(settings: dict) -> list[int]:
-    mode = settings.get("alertMode", "?? 90% ????100% ???")
+    mode = settings.get("alertMode", "达到 90% 先提醒，100% 再报警")
     if "80% / 90% / 100%" in mode: return [80, 90, 100]
     if "100%" in mode and "90%" not in mode: return [100]
     return [90, 100]
 
 def evaluate_alerts(day_usage: dict, month_usage: dict) -> None:
     settings = get_settings()
-    if settings.get("tgEnabled") != "???": return
+    if settings.get("tgEnabled") != "已启用": return
     token, chat_id = settings.get("tgToken", ""), settings.get("tgChatId", "")
     if not token or not chat_id: return
     thresholds = alert_thresholds(settings)
@@ -286,7 +286,7 @@ def index() -> FileResponse: return FileResponse(APP_DIR / "static" / "index.htm
 
 @app.post("/api/login")
 def login(payload: LoginPayload, response: Response) -> dict:
-    if not verify_login(payload.username, payload.password): raise HTTPException(status_code=401, detail="???????")
+    if not verify_login(payload.username, payload.password): raise HTTPException(status_code=401, detail="账号或密码错误")
     response.set_cookie(COOKIE_NAME, SESSION_TOKEN, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 30)
     return {"ok": True, "username": get_settings().get("username", USERNAME)}
 
@@ -302,7 +302,7 @@ def me(vps_traffic_session: Optional[str] = Cookie(default=None)) -> dict:
 
 @app.get("/api/settings")
 def settings(vps_traffic_session: Optional[str] = Cookie(default=None)) -> dict:
-    require_auth(vps_//traffic_session)
+    require_auth(vps_traffic_session)
     settings = get_settings()
     settings.pop("password_hash", None)
     settings.pop("tgToken", None)
@@ -315,32 +315,32 @@ def update_settings(payload: SettingsPayload, vps_traffic_session: Optional[str]
 
 @app.post("/api/test-telegram")
 def test_telegram(vps_traffic_session: Optional[str] = Cookie(default=None)) -> dict:
-    require_auth(vps_//traffic_session)
+    require_auth(vps_traffic_session)
     settings = get_settings()
-    if not settings.get("tgToken") or not settings.get("tgChatId"): raise HTTPException(status_code=400, detail="????????? Telegram Token ? Chat ID")
-    message = f"? <b>VPS ????????</b>\\n\\n????<b>{html.escape(settings.get('hostname', HOSTNAME))}</b>\\n???{html.escape(settings.get('hostAlias', '') or '???')}\\n???{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    if not settings.get("tgToken") or not settings.get("tgChatId"): raise HTTPException(status_code=400, detail="请先设置 Telegram Token 和 Chat ID")
+    message = f"✅ <b>VPS 流量监控测试消息</b>\\n\\n服务器：<b>{html.escape(settings.get('hostname', HOSTNAME))}</b>\\n备注：{html.escape(settings.get('hostAlias', '') or '未设置')}\\n时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     try:
         result = send_telegram_message(settings["tgToken"], settings["tgChatId"], message)
     except Exception as error:
-        raise HTTPException(status_code=500, detail=f"Telegram ?????{error}") from error
+        raise HTTPException(status_code=500, detail=f"Telegram 推送失败：{error}") from error
     return {"ok": True, "result": result}
 
 @app.get("/api/realtime")
 def realtime(vps_traffic_session: Optional[str] = Cookie(default=None)) -> dict:
-    require_auth(vps_//traffic_session)
+    require_auth(vps_traffic_session)
     sample = record_sample()
     sample["currentMonthUsage"] = usage_for_month(sample["month"])
     return sample
 
 @app.get("/api/monthly")
 def monthly(month: Optional[str] = None, vps_traffic_session: Optional[str] = Cookie(default=None)) -> dict:
-    require_auth(vps_//traffic_session)
+    require_auth(vps_traffic_session)
     record_sample()
     return usage_for_month(month or month_key())
 
 @app.get("/api/months")
 def months(vps_traffic_session: Optional[str] = Cookie(default=None)) -> dict:
-    require_auth(vps_//traffic_session)
+    require_auth(vps_traffic_session)
     record_sample()
     return {"months": months_list()}
 
