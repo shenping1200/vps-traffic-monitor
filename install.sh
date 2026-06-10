@@ -42,7 +42,7 @@ systemctl daemon-reload
 systemctl enable --now vps-traffic-monitor
 
 echo ""
-echo "Deploy completed."
-echo "URL: http://YOUR_SERVER_IP:9090"
-echo "Username: admin"
-echo "Password: admin"
+echo "????"
+echo "????: http://?????IP:9090"
+echo "??: admin"
+echo "??: admin"
