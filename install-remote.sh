@@ -6,7 +6,7 @@ APP_DIR="${APP_DIR:-/opt/vps-traffic-monitor}"
 SERVICE_FILE="/etc/systemd/system/vps-traffic-monitor.service"
 
 if [ "$(id -u)" -ne 0 ]; then
-  echo "??? root ???????sudo bash install-remote.sh"
+  echo "Please run as root: sudo bash install-remote.sh"
   exit 1
 fi
 
@@ -46,7 +46,7 @@ systemctl daemon-reload
 systemctl enable --now vps-traffic-monitor
 
 echo ""
-echo "?????"
-echo "?????http://?????IP:9090"
-echo "???admin"
-echo "???admin"
+echo "Deploy completed."
+echo "URL: http://YOUR_SERVER_IP:9090"
+echo "Username: admin"
+echo "Password: admin"
