@@ -41,7 +41,7 @@ class SettingsPayload(BaseModel):
     monthlyLimit: str = "2"
     monthlyUnit: str = "TB"
     alertMode: str = "?? 90% ????100% ???"
-    muteWindow: str,
+    muteWindow: str = "???? 6 ???????"
     tgToken: str = ""
     tgChatId: str = ""
     tgEnabled: str = "???"
