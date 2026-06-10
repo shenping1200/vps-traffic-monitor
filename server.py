@@ -198,23 +198,25 @@ def should_send_alert(alert_key: str, settings: dict) -> bool:
 def build_alert_message(alert_type: str, used_bytes: int, limit_bytes: int, ratio: float, settings: dict, day_usage: dict, month_usage: dict) -> str:
     alias = settings.get("hostAlias", "")
     hostname = html.escape(settings.get("hostname", HOSTNAME))
-    alias_text = f"?{html.escape(alias)}?" if alias else ""
-    try: ip_text = html.escape(socket.gethostbyname(socket.gethostname()))
-    except Exception: ip_text = "0.0.0.0"
+    alias_text = f"（{html.escape(alias)}）" if alias else ""
+    try:
+        ip_text = html.escape(socket.gethostbyname(socket.gethostname()))
+    except Exception:
+        ip_text = "0.0.0.0"
     alert_title = "日流量额度预警" if alert_type.startswith("daily") else "月流量额度预警"
     return (
-        f"?🚨 <b>VPS 流量报警</b>\\n\\n"
-        f"服务器：<b>{hostname}{alias_text}</b>\\n"
-        f"IP?<code>{ip_text}</code>\\n"
-        f"报警类型：{alert_title}\\n\\n"
-        f"当前用量：<b>{format_bytes(used_bytes)}</b>\\n"
-        f"设置额度：<b>{format_bytes(limit_bytes)}</b>\\n"
-        f"使用比例：<b>{ratio:.1f}%</b>\\n"
-        f"下载累计：{format_bytes(day_usage['totalRx'])}\\n"
-        f"下载累计：{format_bytes(day_usage['totalTx'])}\\n"
-        f"下载累计：{format_bytes(month_usage['totalRx'])}\\n"
-        f"下载累计：{format_bytes(month_usage['totalTx'])}\\n\\n"
-        f"触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\\n"
+        f"🚨 <b>VPS 流量报警</b>\n\n"
+        f"服务器：<b>{hostname}{alias_text}</b>\n"
+        f"IP：<code>{ip_text}</code>\n"
+        f"报警类型：{alert_title}\n\n"
+        f"当前用量：<b>{format_bytes(used_bytes)}</b>\n"
+        f"设置额度：<b>{format_bytes(limit_bytes)}</b>\n"
+        f"使用比例：<b>{ratio:.1f}%</b>\n"
+        f"当日下载：{format_bytes(day_usage['totalRx'])}\n"
+        f"当日上传：{format_bytes(day_usage['totalTx'])}\n"
+        f"当月下载：{format_bytes(month_usage['totalRx'])}\n"
+        f"当月上传：{format_bytes(month_usage['totalTx'])}\n\n"
+        f"触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         f"说明：流量已达到预警阈值，请及时检查业务流量。"
     )
 
@@ -323,7 +325,12 @@ def test_telegram(vps_traffic_session: Optional[str] = Cookie(default=None)) -> 
     require_auth(vps_traffic_session)
     settings = get_settings()
     if not settings.get("tgToken") or not settings.get("tgChatId"): raise HTTPException(status_code=400, detail="请先设置 Telegram Token 和 Chat ID")
-    message = f"✅ <b>VPS 流量监控测试消息</b>\\n\\n服务器：<b>{html.escape(settings.get('hostname', HOSTNAME))}</b>\\n备注：{html.escape(settings.get('hostAlias', '') or '未设置')}\\n时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    message = (
+        f"✅ <b>VPS 流量监控测试消息</b>\n\n"
+        f"服务器：<b>{html.escape(settings.get('hostname', HOSTNAME))}</b>\n"
+        f"备注：{html.escape(settings.get('hostAlias', '') or '未设置')}\n"
+        f"时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    )
     try:
         result = send_telegram_message(settings["tgToken"], settings["tgChatId"], message)
     except Exception as error:
