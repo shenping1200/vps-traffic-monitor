@@ -14,7 +14,8 @@ apt update
 apt install -y git python3 python3-venv
 
 if [ -d "$APP_DIR/.git" ]; then
-  git -C "$APP_DIR" pull --ff-only
+  git -C "$APP_DIR" fetch --all --prune
+  git -C "$APP_DIR" reset --hard origin/main
 else
   rm -rf "$APP_DIR"
   git clone "$REPO_URL" "$APP_DIR"

@@ -282,7 +282,12 @@ def require_auth(session: Optional[str]) -> None:
 def startup() -> None: init_db()
 
 @app.get("/")
-def index() -> FileResponse: return FileResponse(APP_DIR / "static" / "index.html")
+def index() -> FileResponse:
+    response = FileResponse(APP_DIR / "static" / "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.post("/api/login")
 def login(payload: LoginPayload, response: Response) -> dict:
